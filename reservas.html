@@ -17,7 +17,7 @@
 const SUPABASE_URL="https://mhgrejgbfxnzkmfqecyr.supabase.co";
 const SUPABASE_ANON_KEY="sb_publishable_ZRKPDm4h2BK1J1gN--OLIA_nCgrACAy";
 const money=n=>new Intl.NumberFormat("es-CO",{style:"currency",currency:"COP",maximumFractionDigits:0}).format(n);
-let services=[],quantities={};
+let services=[],quantities={},cabinAvailable=3;
 const headers={apikey:SUPABASE_ANON_KEY,Authorization:"Bearer "+SUPABASE_ANON_KEY};
 async function loadServices(){
  const res=await fetch(SUPABASE_URL+"/rest/v1/services?active=eq.true&select=id,name,price&order=name",{headers});
@@ -30,8 +30,9 @@ function drawItems(){
  document.getElementById("items").innerHTML=services.map(s=>'<div class="lineitem"><div><strong>'+(icons[s.name]||"✦")+' '+s.name+'</strong><small>'+money(s.price)+' por unidad</small></div><div class="qty"><button type="button" data-id="'+s.id+'" data-step="-1" aria-label="Quitar '+s.name+'">−</button><strong>'+quantities[s.id]+'</strong><button type="button" data-id="'+s.id+'" data-step="1" aria-label="Agregar '+s.name+'">+</button></div></div>').join("");
  document.getElementById("total").textContent=money(services.reduce((a,s)=>a+s.price*quantities[s.id],0));
 }
-document.getElementById("items").addEventListener("click",e=>{const b=e.target.closest("button[data-id]");if(!b)return;const id=b.dataset.id;quantities[id]=Math.max(0,Math.min(50,quantities[id]+Number(b.dataset.step)));drawItems();});
-const dateInput=document.getElementById("date");const today=new Date();dateInput.min=new Date(today.getTime()-today.getTimezoneOffset()*60000).toISOString().slice(0,10);
+document.getElementById("items").addEventListener("click",e=>{const b=e.target.closest("button[data-id]");if(!b)return;const id=b.dataset.id;quantities[id]=Math.max(0,Math.min((services.find(s=>s.id===id)?.name.toLowerCase()==="cabaña"?cabinAvailable:50),quantities[id]+Number(b.dataset.step)));drawItems();});
+async function refreshCabinAvailability(){const cabin=services.find(s=>s.name.toLowerCase()==="cabaña");if(!cabin||!dateInput.value)return;try{const res=await fetch(SUPABASE_URL+"/rest/v1/rpc/get_cabin_availability",{method:"POST",headers:{...headers,"Content-Type":"application/json"},body:JSON.stringify({p_date:dateInput.value})});if(!res.ok)throw new Error("availability");cabinAvailable=Number(await res.json());quantities[cabin.id]=Math.min(quantities[cabin.id]||0,cabinAvailable);drawItems();const node=document.getElementById("items");let note=document.getElementById("cabinAvailability");if(!note){note=document.createElement("p");note.id="cabinAvailability";note.className="muted";node.appendChild(note)}note.textContent="Cabañas disponibles para esta fecha: "+cabinAvailable+" de 3.";}catch(e){console.error(e)}}
+const dateInput=document.getElementById("date");const today=new Date();dateInput.min=new Date(today.getTime()-today.getTimezoneOffset()*60000).toISOString().slice(0,10);dateInput.addEventListener("change",refreshCabinAvailability);
 document.getElementById("bookingForm").addEventListener("submit",async e=>{
  e.preventDefault();const selected=services.filter(s=>quantities[s.id]>0);if(!selected.length){alert("Selecciona al menos un servicio.");return;}
  const btn=document.getElementById("submitBtn"),box=document.getElementById("success");btn.disabled=true;btn.textContent="Enviando...";
@@ -43,5 +44,5 @@ document.getElementById("bookingForm").addEventListener("submit",async e=>{
  e.target.reset();dateInput.min=new Date().toISOString().slice(0,10);services.forEach(s=>quantities[s.id]=0);drawItems();box.scrollIntoView({behavior:"smooth",block:"center"});
  }catch(err){alert(err.message)}finally{btn.disabled=false;btn.textContent="Enviar solicitud de reserva";}
 });
-loadServices().catch(err=>{document.getElementById("items").innerHTML='<p class="muted">No fue posible cargar las tarifas. Recarga la página.</p>';console.error(err);});
+loadServices().then(refreshCabinAvailability).catch(err=>{document.getElementById("items").innerHTML='<p class="muted">No fue posible cargar las tarifas. Recarga la página.</p>';console.error(err);});
 </script></body></html>
