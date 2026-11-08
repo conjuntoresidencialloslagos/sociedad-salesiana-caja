@@ -35,7 +35,6 @@ async function refreshCabinAvailability(){const cabin=services.find(s=>s.name.to
 const dateInput=document.getElementById("date");const today=new Date();dateInput.min=new Date(today.getTime()-today.getTimezoneOffset()*60000).toISOString().slice(0,10);dateInput.addEventListener("change",refreshCabinAvailability);
 document.getElementById("bookingForm").addEventListener("submit",async e=>{
  e.preventDefault();const selected=services.filter(s=>quantities[s.id]>0);if(!selected.length){alert("Selecciona al menos un servicio.");return;}
- const whatsappTab=window.open("about:blank","_blank");
  const btn=document.getElementById("submitBtn"),box=document.getElementById("success");btn.disabled=true;btn.textContent="Enviando...";
  try{
  const payload={customer_name:document.getElementById("name").value,phone:document.getElementById("phone").value,email:document.getElementById("email").value,document_number:document.getElementById("doc").value,visit_date:dateInput.value,guest_count:Number(document.getElementById("guests").value),notes:document.getElementById("notes").value,items:selected.map(s=>({service_id:s.id,quantity:quantities[s.id]}))};
@@ -44,9 +43,9 @@ document.getElementById("bookingForm").addEventListener("submit",async e=>{
  box.style.display="block";box.innerHTML="<strong>¡Solicitud registrada!</strong><br>Código: <b>"+data.reservation_code+"</b><br>Total: <b>"+money(data.total_amount)+"</b><br>Estado: pendiente de pago. En esta etapa aún no se ha generado un QR de ingreso.";
  const waLines=["🔔 NUEVA SOLICITUD DE RESERVA","Centro Juvenil y Familiar Don Bosco","","Código: "+data.reservation_code,"Cliente: "+payload.customer_name,"Celular: "+payload.phone,"Documento: "+(payload.document_number||"No informado"),"Fecha de visita: "+payload.visit_date,"Personas: "+payload.guest_count,"Servicios:",...selected.map(s=>"- "+s.name+" x "+quantities[s.id]+" — "+money(s.price*quantities[s.id])),"","Total: "+money(data.total_amount),"Estado: PENDIENTE DE PAGO","Nota: reserva recibida desde la página web; aún no está confirmada ni tiene QR de ingreso."];
  const waUrl="https://wa.me/573152010270?text="+encodeURIComponent(waLines.join("\n"));
- if(whatsappTab){whatsappTab.location.href=waUrl;}else{box.innerHTML+="<br><a class=\"btn dark\" style=\"margin-top:12px\" target=\"_blank\" rel=\"noopener\" href=\""+waUrl+"\">Abrir WhatsApp para enviar notificación</a>";}
+ box.innerHTML+="<br><a class=\"btn dark\" style=\"margin-top:14px;width:100%\" target=\"_blank\" rel=\"noopener noreferrer\" href=\""+waUrl+"\">Enviar notificación por WhatsApp</a><p class=\"muted\">Pulsa el botón y luego confirma el envío en WhatsApp.</p>";
  e.target.reset();dateInput.min=new Date().toISOString().slice(0,10);services.forEach(s=>quantities[s.id]=0);drawItems();box.scrollIntoView({behavior:"smooth",block:"center"});
- }catch(err){if(whatsappTab)whatsappTab.close();alert(err.message)}finally{btn.disabled=false;btn.textContent="Enviar solicitud de reserva";}
+ }catch(err){alert(err.message)}finally{btn.disabled=false;btn.textContent="Enviar solicitud de reserva";}
 });
 loadServices().then(refreshCabinAvailability).catch(err=>{document.getElementById("items").innerHTML='<p class="muted">No fue posible cargar las tarifas. Recarga la página.</p>';console.error(err);});
 </script></body></html>
