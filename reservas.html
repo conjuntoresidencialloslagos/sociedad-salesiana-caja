@@ -43,7 +43,7 @@ document.getElementById("bookingForm").addEventListener("submit",async e=>{
  const data=await r.json();if(!r.ok)throw new Error(data.error||"No se pudo enviar la solicitud.");
  box.style.display="block";box.innerHTML="<strong>¡Solicitud registrada!</strong><br>Código: <b>"+data.reservation_code+"</b><br>Total: <b>"+money(data.total_amount)+"</b><br>Estado: pendiente de pago. En esta etapa aún no se ha generado un QR de ingreso.";
  const waLines=["🔔 NUEVA SOLICITUD DE RESERVA","Centro Juvenil y Familiar Don Bosco","","Código: "+data.reservation_code,"Cliente: "+payload.customer_name,"Celular: "+payload.phone,"Documento: "+(payload.document_number||"No informado"),"Fecha de visita: "+payload.visit_date,"Personas: "+payload.guest_count,"Servicios:",...selected.map(s=>"- "+s.name+" x "+quantities[s.id]+" — "+money(s.price*quantities[s.id])),"","Total: "+money(data.total_amount),"Estado: PENDIENTE DE PAGO","Nota: reserva recibida desde la página web; aún no está confirmada ni tiene QR de ingreso."];
- const waUrl="https://wa.me/573152010270?text="+encodeURIComponent(waLines.join("\\n"));
+ const waUrl="https://wa.me/573152010270?text="+encodeURIComponent(waLines.join("\n"));
  if(whatsappTab){whatsappTab.location.href=waUrl;}else{box.innerHTML+="<br><a class=\"btn dark\" style=\"margin-top:12px\" target=\"_blank\" rel=\"noopener\" href=\""+waUrl+"\">Abrir WhatsApp para enviar notificación</a>";}
  e.target.reset();dateInput.min=new Date().toISOString().slice(0,10);services.forEach(s=>quantities[s.id]=0);drawItems();box.scrollIntoView({behavior:"smooth",block:"center"});
  }catch(err){if(whatsappTab)whatsappTab.close();alert(err.message)}finally{btn.disabled=false;btn.textContent="Enviar solicitud de reserva";}
